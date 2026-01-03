@@ -29,7 +29,8 @@ jobs:
           TARGET="rtmp://ovsu.okcdn.ru/input/${{ inputs.stream_key }}"
           
           ffmpeg -re -i "$SOURCE" \
-            -c copy \
+            -c:v copy \
+            -c:a aac \
             -f flv \
             "$TARGET" \
             -stats -loglevel warning
