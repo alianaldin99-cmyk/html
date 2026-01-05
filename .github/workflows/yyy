@@ -1,0 +1,45 @@
+name: youtube-restream
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_url:
+        description: 'Source Stream Link (e.g., http://.../index.m3u8)'
+        required: true
+        type: string
+      stream_key:
+        description: 'YouTube Stream Key (will be masked)'
+        required: true
+        type: string
+
+jobs:
+  restream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Install FFmpeg
+        run: sudo apt update && sudo apt install -y ffmpeg
+
+      - name: Mask Stream Key
+        run: echo "::add-mask::${{ inputs.stream_key }}"
+
+      - name: Start Restream to YouTube
+        run: |
+          SOURCE="${{ inputs.source_url }}"
+          TARGET="rtmp://a.rtmp.youtube.com/live2/${{ inputs.stream_key }}"
+
+          ffmpeg -re \
+            -fflags +genpts \
+            -reconnect 1 \
+            -reconnect_streamed 1 \
+            -reconnect_delay_max 5 \
+            -i "$SOURCE" \
+            -c:v copy \
+            -c:a aac \
+            -b:a 128k \
+            -ar 44100 \
+            -f flv \
+            -loglevel warning \
+            -stats \
+            "$TARGET"
