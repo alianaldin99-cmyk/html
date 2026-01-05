@@ -1,14 +1,14 @@
-name: youtube-restream
+name: YouTube Restream (Copy)
 
 on:
   workflow_dispatch:
     inputs:
       source_url:
-        description: 'Source Stream Link (e.g., http://.../index.m3u8)'
+        description: 'Source stream URL (m3u8 / http / https)'
         required: true
         type: string
       stream_key:
-        description: 'YouTube Stream Key (will be masked)'
+        description: 'YouTube Stream Key'
         required: true
         type: string
 
@@ -19,12 +19,14 @@ jobs:
 
     steps:
       - name: Install FFmpeg
-        run: sudo apt update && sudo apt install -y ffmpeg
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg
 
       - name: Mask Stream Key
         run: echo "::add-mask::${{ inputs.stream_key }}"
 
-      - name: Start Restream to YouTube
+      - name: Start Restream
         run: |
           SOURCE="${{ inputs.source_url }}"
           TARGET="rtmp://a.rtmp.youtube.com/live2/${{ inputs.stream_key }}"
@@ -36,9 +38,7 @@ jobs:
             -reconnect_delay_max 5 \
             -i "$SOURCE" \
             -c:v copy \
-            -c:a aac \
-            -b:a 128k \
-            -ar 44100 \
+            -c:a copy \
             -f flv \
             -loglevel warning \
             -stats \
