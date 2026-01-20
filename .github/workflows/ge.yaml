@@ -1,0 +1,47 @@
+name: Gen
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_url:
+        description: 'Source Stream Link (HLS, RTMP, ... → e.g. http://.../index.m3u8)'
+        required: true
+        type: string
+      rtmp_url:
+        description: 'Full RTMP destination URL (without key) e.g. rtmp://a.rtmp.youtube.com/live2'
+        required: true
+        type: string
+      stream_key:
+        description: 'Stream key / stream name'
+        required: true
+        type: string
+
+jobs:
+  restream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360          # 24 hours – increase if you want longer runs
+    steps:
+      - name: Install FFmpeg
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg
+
+      - name: Mask sensitive values
+        run: |
+          echo "::add-mask::${{ inputs.stream_key }}"
+          echo "::add-mask::${{ inputs.rtmp_url }}"
+
+      - name: Start Restream
+        run: |
+          SOURCE="${{ inputs.source_url }}"
+          TARGET="\( {{ inputs.rtmp_url }}/ \){{ inputs.stream_key }}"
+
+          echo "Restreaming from $SOURCE → $TARGET"
+
+          ffmpeg -re -i "$SOURCE" \
+            -c:v copy \
+            -c:a aac \
+            -b:a 128k \
+            -f flv \
+            "$TARGET" \
+            -stats -loglevel warning
